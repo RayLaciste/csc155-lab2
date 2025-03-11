@@ -1,5 +1,7 @@
 package code;
 
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.io.*;
 import java.lang.Math;
 import java.nio.*;
@@ -9,11 +11,12 @@ import static com.jogamp.opengl.GL4.*;
 
 import com.jogamp.opengl.*;
 import com.jogamp.opengl.awt.GLCanvas;
+import com.jogamp.opengl.util.Animator;
 import com.jogamp.opengl.util.texture.*;
 import com.jogamp.common.nio.Buffers;
 import org.joml.*;
 
-public class Code extends JFrame implements GLEventListener {
+public class Code extends JFrame implements GLEventListener, KeyListener {
     private GLCanvas myCanvas;
     private int renderingProgram;
     private int vao[] = new int[1];
@@ -39,11 +42,14 @@ public class Code extends JFrame implements GLEventListener {
 
     public Code() {
         setTitle("Chapter6 - program3");
-        setSize(600, 600);
+        setSize(1000, 1000);
         myCanvas = new GLCanvas();
         myCanvas.addGLEventListener(this);
+        myCanvas.addKeyListener(this);
         this.add(myCanvas);
         this.setVisible(true);
+        Animator animator = new Animator(myCanvas);
+        animator.start();
     }
 
     public static void main(String[] args) {
@@ -64,7 +70,7 @@ public class Code extends JFrame implements GLEventListener {
 
         // Draw the Car
         mMat.identity();
-        mMat.translate(objLocX, objLocY, objLocZ);
+        mMat.translate(objLocX, -1f, objLocZ);
 
         mMat.rotateX((float) Math.toRadians(20.0f));
         mMat.rotateY((float) Math.toRadians(130.0f));
@@ -196,5 +202,20 @@ public class Code extends JFrame implements GLEventListener {
     public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
         float aspect = (float) myCanvas.getWidth() / (float) myCanvas.getHeight();
         pMat.identity().setPerspective((float) Math.toRadians(60.0f), aspect, 0.1f, 1000.0f);
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {
+
+    }
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+
     }
 }
