@@ -17,13 +17,15 @@ import com.jogamp.common.nio.Buffers;
 import org.joml.*;
 
 public class Code extends JFrame implements GLEventListener, KeyListener {
+    // Car movement
+    float carLocX, velocityX, rotAngle;
     private GLCanvas myCanvas;
+    private double startTime = 0.0;
+    private double elapsedTime;
     private int renderingProgram;
     private int vao[] = new int[1];
-    private int vbo[] = new int[4];
+    private int vbo[] = new int[10];
     private float cameraX, cameraY, cameraZ;
-    private float objLocX, objLocY, objLocZ;
-
     // allocate variables for display() function
     private FloatBuffer vals = Buffers.newDirectFloatBuffer(16);
     private Matrix4f pMat = new Matrix4f();  // perspective matrix
@@ -32,13 +34,16 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
     private Matrix4f mvMat = new Matrix4f(); // model-view matrix
     private int mvLoc, pLoc;
     private float aspect;
+    private double tf;
 
+    // Textures
     private int carTexture;
+    private int groundTexture;
 
     private int numObjVertices;
     private ImportedModel myModel;
 
-    private Matrix4fStack mvStack = new Matrix4fStack();
+    private Matrix4fStack mvStack = new Matrix4fStack(16);
 
     public Code() {
         setTitle("Chapter6 - program3");
@@ -60,84 +65,101 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
         GL4 gl = (GL4) GLContext.getCurrentGL();
         gl.glClear(GL_COLOR_BUFFER_BIT);
         gl.glClear(GL_DEPTH_BUFFER_BIT);
+        elapsedTime = System.currentTimeMillis() - startTime;
 
         gl.glUseProgram(renderingProgram);
+        gl.glDrawArrays(GL_LINES, 0, 4);
 
         int mvLoc = gl.glGetUniformLocation(renderingProgram, "mv_matrix");
         int pLoc = gl.glGetUniformLocation(renderingProgram, "p_matrix");
-
-        vMat.identity().setTranslation(-cameraX, -cameraY, -cameraZ);
-
-        // Draw the Car
-        mMat.identity();
-        mMat.translate(objLocX, -1f, objLocZ);
-
-        mMat.rotateX((float) Math.toRadians(20.0f));
-        mMat.rotateY((float) Math.toRadians(130.0f));
-        mMat.rotateZ((float) Math.toRadians(5.0f));
-
-        mvMat.identity()
-                .rotateX((float)Math.toRadians(20.0f))
-                .rotateZ((float)Math.toRadians(5.0f));
-        mvMat.mul(vMat);
-        mvMat.mul(mMat);
-
-        gl.glUniformMatrix4fv(mvLoc, 1, false, mvMat.get(vals));
+        aspect = (float) myCanvas.getWidth() / (float) myCanvas.getHeight();
+        pMat.identity().setPerspective((float) Math.toRadians(60.0f), aspect, 0.1f, 1000.0f);
         gl.glUniformMatrix4fv(pLoc, 1, false, pMat.get(vals));
 
+
+        // push view matrix onto the stack
+        mvStack.pushMatrix();
+        mvStack.translate(-cameraX, -cameraY, -cameraZ);
+
+        tf = elapsedTime / 1000.0;  // time factor
+
+        // ---------------------- Car ----------------------
+        mvStack.pushMatrix();
+
+        carLocX = (float) Math.sin(tf) * 0.5f;
+        velocityX = (float) Math.cos(tf);
+        rotAngle = (float) Math.atan2(velocityX, 1.0f);
+
+        mvStack.translate(carLocX, 0.2f, 0.0f)
+                .rotateX((float) Math.toRadians(20.0f))
+                .rotateY(-rotAngle)
+                .rotateZ((float) Math.toRadians(5.0f));
+        mvStack.pushMatrix();
+        gl.glUniformMatrix4fv(mvLoc, 1, false, mvStack.get(vals));
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
         gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
 
+        // Texture
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
         gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(1);
-
         gl.glActiveTexture(GL_TEXTURE0);
         gl.glBindTexture(GL_TEXTURE_2D, carTexture);
 
+        // Render
         gl.glEnable(GL_DEPTH_TEST);
-        gl.glDepthFunc(GL_LEQUAL);
         gl.glDrawArrays(GL_TRIANGLES, 0, myModel.getNumVertices());
+        mvStack.popMatrix();
+        mvStack.popMatrix();
 
-        // Draw the Cube
-        mMat.translation(0,	-2,	-2);
-
-        mvMat.identity();
-        mvMat.mul(vMat);
-        mvMat.mul(mMat);
-
-        gl.glUniformMatrix4fv(mvLoc, 1, false, mvMat.get(vals));
-        gl.glUniformMatrix4fv(pLoc, 1, false, pMat.get(vals));
-
+        // ---------------------- Ground ----------------------
+        mvStack.pushMatrix();
+        mvStack.translate(0.0f, 0f, 0.0f)
+                .rotateX((float) Math.toRadians(20.0f));
+        gl.glUniformMatrix4fv(mvLoc, 1, false, mvStack.get(vals));
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[3]);
         gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(0);
 
-        gl.glEnable(GL_DEPTH_TEST);
-        gl.glDepthFunc(GL_LEQUAL);
+        // Texture
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[4]);
+        gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, groundTexture);
 
-        gl.glDrawArrays(GL_TRIANGLES, 0, 36);
+        // Render
+        gl.glEnable(GL_DEPTH_TEST);
+        gl.glDrawArrays(GL_TRIANGLES, 0, 6);
+        mvStack.popMatrix();
+
+        mvStack.popMatrix();
     }
 
     public void init(GLAutoDrawable drawable) {
         GL4 gl = (GL4) GLContext.getCurrentGL();
         myModel = new ImportedModel("car.obj");
         renderingProgram = Utils.createShaderProgram("code/vertShader.glsl", "code/fragShader.glsl");
-
-        float aspect = (float) myCanvas.getWidth() / (float) myCanvas.getHeight();
-        pMat.identity().setPerspective((float) Math.toRadians(60.0f), aspect, 0.1f, 1000.0f);
+        startTime = System.currentTimeMillis();
 
         setupVertices();
-        cameraX = 0.0f; cameraY = 0.0f; cameraZ = 4f;
-        objLocX = 0.0f; objLocY = 0.0f; objLocZ = 0.0f;
+        cameraX = 0.0f;
+        cameraY = 0.0f;
+        cameraZ = 4f;
 
         carTexture = Utils.loadTexture("car.png");
+        groundTexture = Utils.loadTexture("brick1.jpg");
+
+        gl.glBindTexture(GL_TEXTURE_2D, groundTexture);
+        gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // Tile
+        gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     }
 
     private void setupVertices() {
         GL4 gl = (GL4) GLContext.getCurrentGL();
 
+        // ---------------------- Car ----------------------
         numObjVertices = myModel.getNumVertices();
         Vector3f[] vertices = myModel.getVertices();
         Vector2f[] texCoords = myModel.getTexCoords();
@@ -158,7 +180,7 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
             nvalues[i * 3 + 2] = (float) (normals[i]).z();
         }
 
-        // 36 vertices of the 12 triangles making up a 2 x 2 x 2 cube centered at the origin
+        // ---------------------- Cube ----------------------
         float[] cubeVertices =
                 {
                         -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f,
@@ -175,10 +197,52 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
                         1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f, -1.0f
                 };
 
+        // ---------------------- Pyramid ----------------------
+        float[] pyramidPositions =
+                {	-1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 1.0f, 0.0f,   //front
+                        1.0f, -1.0f, 1.0f, 1.0f, -1.0f, -1.0f, 0.0f, 1.0f, 0.0f,   //right
+                        1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 0.0f, 1.0f, 0.0f, //back
+                        -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f, 0.0f, 1.0f, 0.0f, //left
+                        -1.0f, -1.0f, -1.0f, 1.0f, -1.0f, 1.0f, -1.0f, -1.0f, 1.0f, //LF
+                        1.0f, -1.0f, 1.0f, -1.0f, -1.0f, -1.0f, 1.0f, -1.0f, -1.0f  //RR
+                };
+
+        float[] pyrTextureCoordinates =
+                {	0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 1.0f,
+                        0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 1.0f,
+                        0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 1.0f,
+                        0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 1.0f,
+                        0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+                        1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f
+                };
+
+        // ---------------------- Ground ----------------------
+        float[] groundVertices =
+                {
+                        -5.0f, 0.0f, -5.0f,  // Bottom-left
+                        5.0f, 0.0f, -5.0f,  // Bottom-right
+                        -5.0f, 0.0f,  5.0f,  // Top-left
+                        5.0f, 0.0f, -5.0f,  // Bottom-right
+                        5.0f, 0.0f,  5.0f,  // Top-right
+                        -5.0f, 0.0f,  5.0f   // Top-left
+                };
+
+        float[] groundTexCoords =
+                {
+                        0.0f, 0.0f,  // Bottom-left
+                        5.0f, 0.0f,  // Bottom-right
+                        0.0f, 5.0f,  // Top-left
+                        5.0f, 0.0f,  // Bottom-right
+                        5.0f, 5.0f,  // Top-right
+                        0.0f, 5.0f   // Top-left
+                };
+
+        // --------------------------------------------
         gl.glGenVertexArrays(vao.length, vao, 0);
         gl.glBindVertexArray(vao[0]);
         gl.glGenBuffers(vbo.length, vbo, 0);
 
+        // ---------------------- Car ----------------------
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
         FloatBuffer vertBuf = Buffers.newDirectFloatBuffer(pvalues);
         gl.glBufferData(GL_ARRAY_BUFFER, vertBuf.limit() * 4, vertBuf, GL_STATIC_DRAW);
@@ -191,7 +255,17 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
         FloatBuffer norBuf = Buffers.newDirectFloatBuffer(nvalues);
         gl.glBufferData(GL_ARRAY_BUFFER, norBuf.limit() * 4, norBuf, GL_STATIC_DRAW);
 
+        // ---------------------- Ground ----------------------
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[3]);
+        FloatBuffer groundBuf = Buffers.newDirectFloatBuffer(groundVertices);
+        gl.glBufferData(GL_ARRAY_BUFFER, groundBuf.limit() * 4, groundBuf, GL_STATIC_DRAW);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[4]);
+        FloatBuffer groundTex = Buffers.newDirectFloatBuffer(groundTexCoords);
+        gl.glBufferData(GL_ARRAY_BUFFER, groundTex.limit() * 4, groundTex, GL_STATIC_DRAW);
+
+        // ---------------------- Cube ----------------------
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[6]);
         FloatBuffer cubeBuf = Buffers.newDirectFloatBuffer(cubeVertices);
         gl.glBufferData(GL_ARRAY_BUFFER, cubeBuf.limit() * 4, cubeBuf, GL_STATIC_DRAW);
     }
