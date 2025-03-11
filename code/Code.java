@@ -30,10 +30,12 @@ public class Code extends JFrame implements GLEventListener {
     private int mvLoc, pLoc;
     private float aspect;
 
-    private int shuttleTexture;
+    private int carTexture;
 
     private int numObjVertices;
     private ImportedModel myModel;
+
+    private Matrix4fStack mvStack = new Matrix4fStack();
 
     public Code() {
         setTitle("Chapter6 - program3");
@@ -68,7 +70,9 @@ public class Code extends JFrame implements GLEventListener {
         mMat.rotateY((float) Math.toRadians(130.0f));
         mMat.rotateZ((float) Math.toRadians(5.0f));
 
-        mvMat.identity();
+        mvMat.identity()
+                .rotateX((float)Math.toRadians(20.0f))
+                .rotateZ((float)Math.toRadians(5.0f));
         mvMat.mul(vMat);
         mvMat.mul(mMat);
 
@@ -84,7 +88,7 @@ public class Code extends JFrame implements GLEventListener {
         gl.glEnableVertexAttribArray(1);
 
         gl.glActiveTexture(GL_TEXTURE0);
-        gl.glBindTexture(GL_TEXTURE_2D, shuttleTexture);
+        gl.glBindTexture(GL_TEXTURE_2D, carTexture);
 
         gl.glEnable(GL_DEPTH_TEST);
         gl.glDepthFunc(GL_LEQUAL);
@@ -119,14 +123,10 @@ public class Code extends JFrame implements GLEventListener {
         pMat.identity().setPerspective((float) Math.toRadians(60.0f), aspect, 0.1f, 1000.0f);
 
         setupVertices();
-        cameraX = 0.0f;
-        cameraY = 0.0f;
-        cameraZ = 1.5f;
-        objLocX = 0.0f;
-        objLocY = 0.0f;
-        objLocZ = 0.0f;
+        cameraX = 0.0f; cameraY = 0.0f; cameraZ = 4f;
+        objLocX = 0.0f; objLocY = 0.0f; objLocZ = 0.0f;
 
-        shuttleTexture = Utils.loadTexture("car.png");
+        carTexture = Utils.loadTexture("car.png");
     }
 
     private void setupVertices() {
