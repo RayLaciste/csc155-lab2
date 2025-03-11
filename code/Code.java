@@ -134,6 +134,26 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
         gl.glDrawArrays(GL_TRIANGLES, 0, 6);
         mvStack.popMatrix();
 
+        // ---------------------- Pyramid ----------------------
+        mvStack.pushMatrix();
+        mvStack.translate(1.0f, 0f, 0.0f);
+        gl.glUniformMatrix4fv(mvLoc, 1, false, mvStack.get(vals));
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[5]);
+        gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
+
+        // Texture
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[7]);
+        gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, groundTexture);
+
+        // Render
+        gl.glEnable(GL_DEPTH_TEST);
+        gl.glDrawArrays(GL_TRIANGLES, 0, 18);
+        mvStack.popMatrix();
+
         mvStack.popMatrix();
     }
 
@@ -264,8 +284,16 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
         FloatBuffer groundTex = Buffers.newDirectFloatBuffer(groundTexCoords);
         gl.glBufferData(GL_ARRAY_BUFFER, groundTex.limit() * 4, groundTex, GL_STATIC_DRAW);
 
-        // ---------------------- Cube ----------------------
+        // ---------------------- Pyramid ----------------------
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[5]);
+        FloatBuffer pyrBuf = Buffers.newDirectFloatBuffer(pyramidPositions);
+        gl.glBufferData(GL_ARRAY_BUFFER, pyrBuf.limit()*4, pyrBuf, GL_STATIC_DRAW);
+
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[6]);
+        FloatBuffer pyrTexBuf = Buffers.newDirectFloatBuffer(pyrTextureCoordinates);
+        gl.glBufferData(GL_ARRAY_BUFFER, pyrTexBuf.limit()*4, pyrTexBuf, GL_STATIC_DRAW);
+        // ---------------------- Cube ----------------------
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[7]);
         FloatBuffer cubeBuf = Buffers.newDirectFloatBuffer(cubeVertices);
         gl.glBufferData(GL_ARRAY_BUFFER, cubeBuf.limit() * 4, cubeBuf, GL_STATIC_DRAW);
     }
