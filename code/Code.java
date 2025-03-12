@@ -21,6 +21,7 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
     float carLocX, velocityX, rotAngle;
     private GLCanvas myCanvas;
     private double startTime = 0.0;
+    private double prevTime = 0.0;
     private double elapsedTime;
     private int renderingProgram;
     private int vao[] = new int[1];
@@ -34,11 +35,17 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
     private Matrix4f mvMat = new Matrix4f(); // model-view matrix
     private int mvLoc, pLoc;
     private float aspect;
-    private double tf;
+    private double tf, deltaTime;
+
+    // Pyramid movement
+    private float pyramidPosZ = -5.0f; // Initial position of the pyramid
+    private float pyramidSpeed = 1.0f; // Speed of the pyramid's movement
+    private boolean pyramidMovingBack = true; // Direction of movement
 
     // Textures
     private int carTexture;
     private int groundTexture;
+    private int treeTexture;
 
     private int numObjVertices;
     private ImportedModel myModel;
@@ -65,7 +72,10 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
         GL4 gl = (GL4) GLContext.getCurrentGL();
         gl.glClear(GL_COLOR_BUFFER_BIT);
         gl.glClear(GL_DEPTH_BUFFER_BIT);
+
         elapsedTime = System.currentTimeMillis() - startTime;
+        deltaTime = (System.currentTimeMillis() - prevTime) / 1000;
+        prevTime = System.currentTimeMillis();
 
         gl.glUseProgram(renderingProgram);
         gl.glDrawArrays(GL_LINES, 0, 4);
@@ -90,8 +100,8 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
         velocityX = (float) Math.cos(tf);
         rotAngle = (float) Math.atan2(velocityX, 1.0f);
 
-        mvStack.translate(carLocX, 0.2f, 0.0f)
-                .rotateX((float) Math.toRadians(20.0f))
+        mvStack.translate(carLocX, 0.175f, 0.0f)
+//                .rotateX((float) Math.toRadians(20.0f))
                 .rotateY(-rotAngle)
                 .rotateZ((float) Math.toRadians(5.0f));
         mvStack.pushMatrix();
@@ -115,8 +125,8 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
 
         // ---------------------- Ground ----------------------
         mvStack.pushMatrix();
-        mvStack.translate(0.0f, 0f, 0.0f)
-                .rotateX((float) Math.toRadians(20.0f));
+        mvStack.translate(0.0f, 0f, 0.0f);
+//                .rotateX((float) Math.toRadians(20.0f));
         gl.glUniformMatrix4fv(mvLoc, 1, false, mvStack.get(vals));
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[3]);
         gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
@@ -136,7 +146,23 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
 
         // ---------------------- Pyramid ----------------------
         mvStack.pushMatrix();
-        mvStack.translate(1.0f, 0f, 0.0f);
+
+        // Update pyramid position based on time
+        if (pyramidMovingBack) {
+            pyramidPosZ += pyramidSpeed * deltaTime; // Move towards the back
+            if (pyramidPosZ >= 5.0f) { // If it reaches the end of the plane
+                pyramidPosZ = -5.0f; // Reset to the front
+            }
+        } else {
+            pyramidPosZ -= pyramidSpeed * deltaTime; // Move towards the front
+            if (pyramidPosZ <= -5.0f) { // If it reaches the end of the plane
+                pyramidPosZ = 5.0f; // Reset to the back
+            }
+        }
+
+        mvStack.translate(1.5f, 0.5f, pyramidPosZ)
+                .scale(0.5f);
+
         gl.glUniformMatrix4fv(mvLoc, 1, false, mvStack.get(vals));
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[5]);
         gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
@@ -147,13 +173,50 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
         gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
         gl.glEnableVertexAttribArray(1);
         gl.glActiveTexture(GL_TEXTURE0);
-        gl.glBindTexture(GL_TEXTURE_2D, groundTexture);
+        gl.glBindTexture(GL_TEXTURE_2D, treeTexture);
 
         // Render
         gl.glEnable(GL_DEPTH_TEST);
         gl.glDrawArrays(GL_TRIANGLES, 0, 18);
         mvStack.popMatrix();
 
+        // ---------------------- Pyramid2 ----------------------
+        mvStack.pushMatrix();
+
+        // Update pyramid position based on time
+        if (pyramidMovingBack) {
+            pyramidPosZ += pyramidSpeed * deltaTime; // Move towards the back
+            if (pyramidPosZ >= 5.0f) { // If it reaches the end of the plane
+                pyramidPosZ = -5.0f; // Reset to the front
+            }
+        } else {
+            pyramidPosZ -= pyramidSpeed * deltaTime; // Move towards the front
+            if (pyramidPosZ <= -5.0f) { // If it reaches the end of the plane
+                pyramidPosZ = 5.0f; // Reset to the back
+            }
+        }
+
+        mvStack.translate(-1.5f, 0.5f, pyramidPosZ)
+                .scale(0.5f);
+
+        gl.glUniformMatrix4fv(mvLoc, 1, false, mvStack.get(vals));
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[5]);
+        gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
+
+        // Texture
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[7]);
+        gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, treeTexture);
+
+        // Render
+        gl.glEnable(GL_DEPTH_TEST);
+        gl.glDrawArrays(GL_TRIANGLES, 0, 18);
+        mvStack.popMatrix();
+
+        // --------------------------------------------
         mvStack.popMatrix();
     }
 
@@ -165,13 +228,18 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
 
         setupVertices();
         cameraX = 0.0f;
-        cameraY = 0.0f;
+        cameraY = 1.0f;
         cameraZ = 4f;
 
         carTexture = Utils.loadTexture("car.png");
         groundTexture = Utils.loadTexture("brick1.jpg");
+        treeTexture = Utils.loadTexture("tree.png");
 
         gl.glBindTexture(GL_TEXTURE_2D, groundTexture);
+        gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // Tile
+        gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+        gl.glBindTexture(GL_TEXTURE_2D, treeTexture);
         gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // Tile
         gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     }
