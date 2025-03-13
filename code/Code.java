@@ -233,15 +233,15 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
         cameraZ = 4f;
 
         carTexture = Utils.loadTexture("car.png");
-        groundTexture = Utils.loadTexture("brick1.jpg");
-        treeTexture = Utils.loadTexture("tree.png");
+        groundTexture = Utils.loadTexture("ground.jpg");
+        treeTexture = Utils.loadTexture("tree.jpg");
 
         gl.glBindTexture(GL_TEXTURE_2D, groundTexture);
         gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // Tile
         gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
         gl.glBindTexture(GL_TEXTURE_2D, treeTexture);
-        gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // Tile
+        gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     }
 
