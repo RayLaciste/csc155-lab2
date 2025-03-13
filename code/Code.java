@@ -35,7 +35,8 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
     private Matrix4f mvMat = new Matrix4f(); // model-view matrix
     private int mvLoc, pLoc;
     private float aspect;
-    private double tf, deltaTime;
+    private double tf;
+    private double deltaTime;
 
     // Pyramid movement
     private float pyramidPosZ = -5.0f; // Initial position of the pyramid
@@ -381,7 +382,31 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
 
     @Override
     public void keyPressed(KeyEvent e) {
-
+        float speed = 5f;
+        switch (e.getKeyCode()) {
+            case KeyEvent.VK_W:
+                cameraZ -= (float)(speed * deltaTime);
+                break;
+            case KeyEvent.VK_A:
+                cameraX -= (float)(speed * deltaTime);
+                break;
+            case KeyEvent.VK_S:
+                cameraZ += (float)(speed * deltaTime);
+                break;
+            case KeyEvent.VK_D:
+                cameraX += (float)(speed * deltaTime);
+                break;
+            case KeyEvent.VK_UP:
+                break;
+            case KeyEvent.VK_DOWN:
+                break;
+            case KeyEvent.VK_LEFT:
+                break;
+            case KeyEvent.VK_RIGHT:
+                break;
+            case KeyEvent.VK_SPACE:
+                break;
+        }
     }
 
     @Override
