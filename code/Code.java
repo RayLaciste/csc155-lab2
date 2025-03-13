@@ -47,6 +47,10 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
     private float pyramidSpeed = 1.0f; // Speed of the pyramid's movement
     private boolean pyramidMovingBack = true; // Direction of movement
 
+    // Camera
+    private float cameraPitch = 0.0f;
+    private float cameraYaw = 0.0f;
+
     // Textures
     private int carTexture;
     private int groundTexture;
@@ -95,6 +99,8 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
 
         // push view matrix onto the stack
         mvStack.pushMatrix();
+        mvStack.rotateX(cameraPitch); // pitch
+        mvStack.rotateY(cameraYaw); // Yaw
         mvStack.translate(-cameraX, -cameraY, -cameraZ);
 
         tf = elapsedTime / 1000.0;  // time factor
@@ -450,6 +456,7 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
     @Override
     public void keyPressed(KeyEvent e) {
         float speed = 5f;
+        float cameraSpeed = 0.05f;
         switch (e.getKeyCode()) {
             case KeyEvent.VK_W:
                 cameraZ -= (float)(speed * deltaTime);
@@ -464,21 +471,24 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
                 cameraX += (float)(speed * deltaTime);
                 break;
             case KeyEvent.VK_UP:
+                cameraPitch -= cameraSpeed;
                 break;
             case KeyEvent.VK_DOWN:
+                cameraPitch += cameraSpeed;
                 break;
             case KeyEvent.VK_LEFT:
+                cameraYaw -= cameraSpeed;
                 break;
             case KeyEvent.VK_RIGHT:
+                cameraYaw += cameraSpeed;
                 break;
             case KeyEvent.VK_SPACE:
                 if (visibleAxis) {
                     axesX += 10f;
-                    visibleAxis = false;
                 } else {
                     axesX -= 10f;
-                    visibleAxis = true;
                 }
+                visibleAxis = !visibleAxis;
                 break;
         }
     }
