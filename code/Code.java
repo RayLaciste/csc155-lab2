@@ -38,6 +38,10 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
     private double tf;
     private double deltaTime;
 
+    // Axes Position
+    private boolean visibleAxis = true;
+    private float axesX = 0.0f;
+
     // Pyramid movement
     private float pyramidPosZ = -5.0f; // Initial position of the pyramid
     private float pyramidSpeed = 1.0f; // Speed of the pyramid's movement
@@ -47,6 +51,7 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
     private int carTexture;
     private int groundTexture;
     private int treeTexture;
+    private int axisTexture;
 
     private int numObjVertices;
     private ImportedModel myModel;
@@ -93,6 +98,29 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
         mvStack.translate(-cameraX, -cameraY, -cameraZ);
 
         tf = elapsedTime / 1000.0;  // time factor
+
+        // ---------------------- Axis Lines ----------------------
+        mvStack.pushMatrix();
+
+        mvStack.translate(axesX, 0.0f, 0.0f);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[8]);
+        gl.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(0);
+
+        // Texture
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[9]);
+        gl.glVertexAttribPointer(1, 2, GL_FLOAT, false, 0, 0);
+        gl.glEnableVertexAttribArray(1);
+        gl.glActiveTexture(GL_TEXTURE0);
+        gl.glBindTexture(GL_TEXTURE_2D, axisTexture);
+
+        // Render
+        gl.glUniformMatrix4fv(mvLoc, 1, false, mvStack.get(vals));
+        gl.glLineWidth(2.0f);
+        gl.glDrawArrays(GL_LINES, 0, 6);
+
+        mvStack.popMatrix();
 
         // ---------------------- Car ----------------------
         mvStack.pushMatrix();
@@ -235,6 +263,7 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
         carTexture = Utils.loadTexture("car.png");
         groundTexture = Utils.loadTexture("ground.jpg");
         treeTexture = Utils.loadTexture("tree.jpg");
+        axisTexture = Utils.loadTexture("axis.png");
 
         gl.glBindTexture(GL_TEXTURE_2D, groundTexture);
         gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // Tile
@@ -326,6 +355,35 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
                         0.0f, 5.0f   // Top-left
                 };
 
+        // ---------------------- Axis Lines ----------------------
+        float[] axisVertices = {
+                // X
+                0.0f, 0.0f, 0.0f,
+                1.0f, 0.0f, 0.0f,
+
+                // Y
+                0.0f, 0.0f, 0.0f,
+                0.0f, 1.0f, 0.0f,
+
+                // Z
+                0.0f, 0.0f, 0.0f,
+                0.0f, 0.0f, 1.0f
+        };
+
+        float[] axisTexCoords = {
+                // X
+                1.0f, 0.0f,
+                1.0f, 0.0f,
+
+                // Y
+                0.0f, 1.0f,
+                0.0f, 1.0f,
+
+                // Z
+                0.0f, 0.0f,
+                0.0f, 0.0f
+        };
+
         // --------------------------------------------
         gl.glGenVertexArrays(vao.length, vao, 0);
         gl.glBindVertexArray(vao[0]);
@@ -365,6 +423,15 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
         gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[7]);
         FloatBuffer cubeBuf = Buffers.newDirectFloatBuffer(cubeVertices);
         gl.glBufferData(GL_ARRAY_BUFFER, cubeBuf.limit() * 4, cubeBuf, GL_STATIC_DRAW);
+
+        // ---------------------- Axis Lines ----------------------
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[8]);
+        FloatBuffer axisVertBuf = Buffers.newDirectFloatBuffer(axisVertices);
+        gl.glBufferData(GL_ARRAY_BUFFER, axisVertBuf.limit() * 4, axisVertBuf, GL_STATIC_DRAW);
+
+        gl.glBindBuffer(GL_ARRAY_BUFFER, vbo[9]);
+        FloatBuffer axisTexBuf = Buffers.newDirectFloatBuffer(axisTexCoords);
+        gl.glBufferData(GL_ARRAY_BUFFER, axisTexBuf.limit() * 4, axisTexBuf, GL_STATIC_DRAW);
     }
 
     public void dispose(GLAutoDrawable drawable) {
@@ -405,6 +472,13 @@ public class Code extends JFrame implements GLEventListener, KeyListener {
             case KeyEvent.VK_RIGHT:
                 break;
             case KeyEvent.VK_SPACE:
+                if (visibleAxis) {
+                    axesX += 10f;
+                    visibleAxis = false;
+                } else {
+                    axesX -= 10f;
+                    visibleAxis = true;
+                }
                 break;
         }
     }
